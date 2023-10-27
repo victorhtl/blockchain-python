@@ -115,6 +115,8 @@ class Blockchain:
 
 app = Flask(__name__)
 
+# Random UUID (Universally Unique IDentifier)
+node_address = str(uuid4().replace('-', ''))
 
 blockchain = Blockchain()
 
@@ -125,12 +127,14 @@ def mineBlock():
     previous_proof = previous_block['proof']
     proof = blockchain.proofOfWork(previous_proof)
     previous_hash = blockchain.hash(previous_block)
+    blockchain.addTransaction(sender=node_address, receiver='Victor', amount=10)
     block = blockchain.createBlock(proof, previous_hash)
     response = {'message': 'Parabens voce acabou de minerar um bloco!',
                 'index': block['index'],
                 'timestamp': block['timestamp'],
                 'proof': block['proof'],
-                'previous_hash': block['previous_hash']}
+                'previous_hash': block['previous_hash'],
+                'transaction': block['transactions']}
     return jsonify(response), 200
 
 # Retorna todo o blockchain
