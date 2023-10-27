@@ -11,9 +11,10 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.transactions = []
-        self.create_block(proof = 1, previous_hash = '0')
+        self.createBlock(proof = 1, previous_hash = '0')
+        self.nodes = set()
 
-    def create_block(self, proof, previous_hash):
+    def createBlock(self, proof, previous_hash):
         """
         Insere na chain um novo bloco
         """
@@ -29,10 +30,10 @@ class Blockchain:
         self.chain.append(block)
         return block
 
-    def get_previous_block(self):
+    def getPreviousBlock(self):
         return self.chain[-1]
 
-    def proof_of_work(self, previous_proof):
+    def proofOfWork(self, previous_proof):
         new_proof = 1
         check_proof = False
         while check_proof is False:
@@ -54,7 +55,7 @@ class Blockchain:
         # Gera um hash a partir destes bytes e retorna em hexadecimal
         return hashlib.sha256(encoded_block).hexdigest()
     
-    def is_chain_valid(self, chain):
+    def isChainValid(self, chain):
         """
         Verifica se cada bloco tem um proof of word válido
         refazendo a verificação de hash de um bloco com seu
@@ -87,8 +88,13 @@ class Blockchain:
             'amount': amount
         }
         self.transactions.append(transaction)
-        previous_block_list = self.get_previous_block()
+        previous_block_list = self.getPreviousBlock()
         return previous_block_list['index'] + 1
+
+    def addNode(self, address):
+        parsed_url = urlparse(address)
+        self.nodes.add(parsed_url.netloc)
+
 
 app = Flask(__name__)
 
@@ -96,13 +102,13 @@ app = Flask(__name__)
 blockchain = Blockchain()
 
 # Faz a mineração do bloco
-@app.route('/mine_block', methods = ['GET'])
-def mine_block():
-    previous_block = blockchain.get_previous_block()
+@app.route('/mineBlock', methods = ['GET'])
+def mineBlock():
+    previous_block = blockchain.getPreviousBlock()
     previous_proof = previous_block['proof']
-    proof = blockchain.proof_of_work(previous_proof)
+    proof = blockchain.proofOfWork(previous_proof)
     previous_hash = blockchain.hash(previous_block)
-    block = blockchain.create_block(proof, previous_hash)
+    block = blockchain.createBlock(proof, previous_hash)
     response = {'message': 'Parabens voce acabou de minerar um bloco!',
                 'index': block['index'],
                 'timestamp': block['timestamp'],
@@ -111,15 +117,15 @@ def mine_block():
     return jsonify(response), 200
 
 # Retorna todo o blockchain
-@app.route('/get_chain', methods = ['GET'])
-def get_chain():
+@app.route('/getChain', methods = ['GET'])
+def getChain():
     response = {'chain': blockchain.chain,
                 'length': len(blockchain.chain)}
     return jsonify(response), 200
 
-@app.route('/is_valid', methods = ['GET'])
-def is_valid():
-    is_valid = blockchain.is_chain_valid(blockchain.chain)
+@app.route('/isValid', methods = ['GET'])
+def isValid():
+    is_valid = blockchain.isChainValid(blockchain.chain)
     if is_valid:
         response = {'message' : ' Tudo certo, o blockchain e valido '}
     else:
