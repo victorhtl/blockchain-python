@@ -116,7 +116,7 @@ class Blockchain:
 app = Flask(__name__)
 
 # Random UUID (Universally Unique IDentifier)
-node_address = str(uuid4().replace('-', ''))
+node_address = str(uuid4()).replace('-', '')
 
 blockchain = Blockchain()
 
@@ -127,7 +127,7 @@ def mineBlock():
     previous_proof = previous_block['proof']
     proof = blockchain.proofOfWork(previous_proof)
     previous_hash = blockchain.hash(previous_block)
-    blockchain.addTransaction(sender=node_address, receiver='Victor', amount=10)
+    blockchain.addTransaction(sender=node_address, receiver='José', amount=10)
     block = blockchain.createBlock(proof, previous_hash)
     response = {'message': 'Parabens voce acabou de minerar um bloco!',
                 'index': block['index'],
@@ -153,4 +153,38 @@ def isValid():
         response = {'message' : ' O blockchain nao e valido '}
     return jsonify(response), 200
 
-app.run(host = '0.0.0.0', port = 5000)
+@app.route('/addTransaction', methods=['POST'])
+def addTransaction():
+    json = request.get_json()
+    transaction_keys = ['sender', 'receiver', 'amount']
+    if not all(key in json for key in transaction_keys):
+        return 'Alguns elementos estao faltando', 400
+    index = blockchain.addTransaction(json['sender'], json['receiver'], json['amount'])
+    response = {'messege': f'Esta transacao sera adicionada ao bloco {index}'}
+    return jsonify(response), 201
+
+@app.route('/connectNode', methods = ['POST'])
+def connectNode():
+    json = request.get_json()
+    nodes = json.get('nodes')
+    if nodes is None:
+        return "Vazio", 400
+    for node in nodes:
+        blockchain.addNode(node)    
+    response = {'message': 'Todos os nos conectados, blockchain contem os seguintes nos:',
+                'total_nodes': list(blockchain.nodes)}
+    return jsonify(response), 201
+
+# substituir a blockchain no nó
+@app.route('/replaceChain', methods=['GET'])
+def replaceChain():
+    is_chain_replaced = blockchain.replaceChain()
+    if is_chain_replaced:
+        response = {'message': 'Cadeias substituidas',
+                    'new_chain': blockchain.chain}
+    else:
+        response = {'message': 'Nao houve substituição',
+                    'actual_chain': blockchain.chain}
+    return jsonify(response), 201
+
+app.run(host = '0.0.0.0', port = 5002)
